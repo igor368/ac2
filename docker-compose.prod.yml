@@ -10,7 +10,7 @@ services:
       - db-volume:/var/lib/postgresql/data
 
   api:
-    image: heloisagoulartv/facens_devops:latest
+    image: heloisagoulartv/ac2:latest
     networks:
       - default  # Certifique-se de que está usando a rede adequada
     environment:
