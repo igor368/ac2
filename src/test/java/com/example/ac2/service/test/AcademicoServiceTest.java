@@ -1,8 +1,21 @@
 package com.example.ac2.service.test;
 
-import com.example.ac2.dto.*;
-import com.example.ac2.entity.*;
-import com.example.ac2.repository.*;
+import com.example.ac2.dto.AlunoRequestDTO;
+import com.example.ac2.dto.AlunoResponseDTO;
+import com.example.ac2.dto.CursoRequestDTO;
+import com.example.ac2.dto.CursoResponseDTO;
+import com.example.ac2.dto.NovaMatriculaRequestDTO;
+
+import com.example.ac2.entity.Aluno;
+import com.example.ac2.entity.Aluno_Email;
+import com.example.ac2.entity.Aluno_RA;
+import com.example.ac2.entity.Curso;
+import com.example.ac2.entity.Matricula;
+
+import com.example.ac2.repository.AlunoRepository;
+import com.example.ac2.repository.CursoRepository;
+import com.example.ac2.repository.MatriculaRepository;
+
 import com.example.ac2.service.AcademicoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +26,6 @@ import org.mockito.MockitoAnnotations;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class AcademicoServiceTest {
@@ -35,9 +47,7 @@ class AcademicoServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    // ----------------------------------------------------------
     // TEST 1: criarAluno()
-    // ----------------------------------------------------------
     @Test
     void testCriarAluno() {
 
@@ -65,9 +75,7 @@ class AcademicoServiceTest {
         assertEquals(0, resposta.saldoCursosExtras());
     }
 
-    // ----------------------------------------------------------
     // TEST 2: criarCurso()
-    // ----------------------------------------------------------
     @Test
     void testCriarCurso() {
 
@@ -86,9 +94,7 @@ class AcademicoServiceTest {
         assertEquals("Matemática", resposta.nomeDoCurso());
     }
 
-    // ----------------------------------------------------------
     // TEST 3: realizarNovaMatricula() - com saldo
-    // ----------------------------------------------------------
     @Test
     void testRealizarNovaMatricula_ComSaldo() {
 
@@ -113,9 +119,7 @@ class AcademicoServiceTest {
         verify(matriculaRepository, times(1)).save(any(Matricula.class));
     }
 
-    // ----------------------------------------------------------
     // TEST 4: realizarNovaMatricula() - sem saldo
-    // ----------------------------------------------------------
     @Test
     void testRealizarNovaMatricula_SemSaldo() {
 
@@ -135,9 +139,7 @@ class AcademicoServiceTest {
         verify(matriculaRepository, never()).save(any());
     }
 
-    // ----------------------------------------------------------
     // TEST 5: concluirCurso() - media > 7 → ganha 3 créditos
-    // ----------------------------------------------------------
     @Test
     void testConcluirCurso_GanhaCredito() {
 
@@ -162,9 +164,7 @@ class AcademicoServiceTest {
         verify(matriculaRepository).save(matricula);
     }
 
-    // ----------------------------------------------------------
     // TEST 6: concluirCurso() - media <= 7 → não ganha creditos
-    // ----------------------------------------------------------
     @Test
     void testConcluirCurso_SemGanho() {
 
@@ -184,5 +184,50 @@ class AcademicoServiceTest {
 
         verify(alunoRepository, never()).save(any());
         verify(matriculaRepository).save(matricula);
+    }
+
+    // EXCEPTIONS
+
+    @Test
+    void testRealizarNovaMatricula_AlunoNaoEncontrado() {
+        NovaMatriculaRequestDTO request =
+                new NovaMatriculaRequestDTO(999L, 5L);
+
+        when(alunoRepository.findById(999L)).thenReturn(Optional.empty());
+
+        Exception e = assertThrows(RuntimeException.class,
+                () -> academicoService.realizarNovaMatricula(request));
+
+        assertEquals("Aluno não encontrado", e.getMessage());
+    }
+
+    @Test
+    void testRealizarNovaMatricula_CursoNaoEncontrado() {
+
+        NovaMatriculaRequestDTO request =
+                new NovaMatriculaRequestDTO(1L, 999L);
+
+        Aluno aluno = new Aluno();
+        aluno.setId(1L);
+        aluno.setSaldoCursosExtras(1);
+
+        when(alunoRepository.findById(1L)).thenReturn(Optional.of(aluno));
+        when(cursoRepository.findById(999L)).thenReturn(Optional.empty());
+
+        Exception e = assertThrows(RuntimeException.class,
+                () -> academicoService.realizarNovaMatricula(request));
+
+        assertEquals("Curso não encontrado", e.getMessage());
+    }
+
+    @Test
+    void testConcluirCurso_MatriculaNaoEncontrada() {
+
+        when(matriculaRepository.findById(123L)).thenReturn(Optional.empty());
+
+        Exception e = assertThrows(RuntimeException.class,
+                () -> academicoService.concluirCurso(123L, 8.0));
+
+        assertEquals("Matrícula não encontrada", e.getMessage());
     }
 }
